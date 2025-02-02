@@ -33,6 +33,7 @@ export type DirectFileManipulatorOptions = {
     maxAgeInEden: number;
     enableChunkSplitterV2: boolean;
     enableCompression: boolean;
+    handleFilenameCaseSensitive?: boolean;
 }
 
 export type ReadyEntry = (NewEntry | PlainEntry) & { data: string[] };
@@ -89,7 +90,11 @@ export class DirectFileManipulator implements DBFunctionEnvironment {
     }
     async path2id(filename: FilePathWithPrefix | FilePath, prefix?: string): Promise<DocumentID> {
         const fileName = prefix ? addPrefix(filename, prefix) : filename;
-        const id = await path2id_base(fileName, this.options.obfuscatePassphrase ?? false);
+        const id = await path2id_base(
+            fileName, 
+            this.options.obfuscatePassphrase ?? false, 
+            !this.options.handleFilenameCaseSensitive
+        );
         return id;
     }
 
