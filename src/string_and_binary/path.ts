@@ -78,21 +78,32 @@ const hashString = memorizeFuncWithLRUCache(async (key: string) => {
 })
 
 export async function path2id_base(
-    filename: FilePathWithPrefix | FilePath,
+    filenameSrc: FilePathWithPrefix | FilePath,
     obfuscatePassphrase: string | false,
+    caseInsensitive: boolean
 ): Promise<DocumentID> {
-    if (filename.startsWith(PREFIX_OBFUSCATED)) return filename as string as DocumentID;
+    if (filenameSrc.startsWith(PREFIX_OBFUSCATED)) return `${filenameSrc}` as DocumentID;
+    let filename = `${filenameSrc}`;
+    const newPrefix = obfuscatePassphrase ? PREFIX_OBFUSCATED : "";
+    if (caseInsensitive) {
+        filename = filename.toLowerCase() as FilePathWithPrefix;
+    }
+
     let x = filename;
     if (x.startsWith("_")) x = ("/" + x) as FilePathWithPrefix;
-    if (!obfuscatePassphrase) return x as string as DocumentID;
+
+    if (!obfuscatePassphrase) {
+        return (newPrefix + x) as DocumentID;
+    }
+
     // obfuscating...
-    const [prefix, body] = expandFilePathPrefix(x);
+    const [prefix, body] = expandFilePathPrefix(x as FilePathWithPrefix);
     // Already Hashed
-    if (body.startsWith(PREFIX_OBFUSCATED)) return x as string as DocumentID;
+    if (body.startsWith(PREFIX_OBFUSCATED)) return (newPrefix + x) as DocumentID;
     const hashedPassphrase = await hashString(obfuscatePassphrase);
     // Hash it!
     const out = await hashString(`${hashedPassphrase}:${filename}`);
-    return (prefix + PREFIX_OBFUSCATED + out) as DocumentID;
+    return (prefix + newPrefix + out) as DocumentID;
 }
 
 export function id2path_base(id: DocumentID, entry?: EntryHasPath): FilePathWithPrefix {
